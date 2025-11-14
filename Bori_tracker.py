@@ -22,45 +22,93 @@ class Colors:
     UNDERLINE = '\033[4m'
 
 # -----------------------------------------------------------
-# 📝 CONFIGURACIÓN DEL BOT Y PARÁMETROS
+# 📝 CONFIGURACIÓN DEL BOT Y PARÁMETROS (EXTENDIDA)
 # -----------------------------------------------------------
 class BotConfiguration:
-    """Clase para simular la configuración de opciones del bot."""
+    """
+    Clase centralizada para definir todos los parámetros de configuración, 
+    gestión de riesgo y estrategia del BoriTracker.
+    """
     def __init__(self):
-        self.TICK_INTERVAL_SECONDS = 5 
+        
+        # ==========================================================
+        # 💰 PARÁMETROS DE CAPITAL Y PLATAFORMA (Coinbase)
+        # ==========================================================
         self.INITIAL_USDC_BALANCE = 1000.00
+        # Porcentaje del capital total que se asigna a una posición
+        self.MAX_CAPITAL_ALLOCATION_PCT = 0.95 
+        # Comisión de la plataforma (simulada)
+        self.COMMISSION_PCT = 0.003  # 0.3%
+        # Deslizamiento simulado por la ejecución de la orden
+        self.SLIPPAGE_PCT = 0.001    # 0.1% 
+        
+        # ==========================================================
+        # ⏳ PARÁMETROS DE TIEMPO Y SIMULACIÓN
+        # ==========================================================
+        self.TICK_INTERVAL_SECONDS = 5
+        # Periodo RSI * 2 para asegurar datos iniciales (28 ticks por defecto)
+        self.INITIAL_HISTORY_TICKS = 28 
+        # Límite máximo de ticks de simulación antes de detenerse automáticamente (0 = Infinito)
+        self.MAX_SIMULATION_TICKS = 0 
+        
+        # ==========================================================
+        # 📊 ESTRATEGIA RSI Y GESTIÓN DE RIESGO
+        # ==========================================================
+        # Periodo (lookback) para el cálculo del RSI (14 es estándar)
+        self.RSI_PERIOD = 14
+        # Umbral bajo: RSI <= 25 (Señal de COMPRA / Sobrevendido)
+        self.RSI_BUY_THRESHOLD = 25    
+        # Umbral alto: RSI >= 75 (Señal de VENTA / Sobrecomprado)
+        self.RSI_SELL_THRESHOLD = 75   
+        
+        # Stop Loss: Porcentaje de pérdida aceptable desde el precio de entrada
+        self.STOP_LOSS_PCT = 0.03    # 3%
+        # Take Profit: Porcentaje de ganancia para cerrar automáticamente
+        self.TAKE_PROFIT_PCT = 0.15  # 15%
+        
+        # ==========================================================
+        # 🌐 ACTIVOS Y PRECIOS INICIALES
+        # ==========================================================
         self.ASSETS_TO_TRACK = [
             'BRCN', 'SOL', 'JUP', 'PYTH', 'RENDER', 
             'BONK', 'ETH', 'LINK', 'AVAX', 'DOGE'
         ] 
-        self.RSI_PERIOD = 14
-        self.RSI_BUY_THRESHOLD = 25    
-        self.RSI_SELL_THRESHOLD = 75   
-        self.STOP_LOSS_PCT = 0.03    # Stop Loss del 3%
-        self.TAKE_PROFIT_PCT = 0.15  # Take Profit del 15%
-        self.COMMISSION_PCT = 0.003  # Comisión del 0.3% (Simulado)
-
-        self.CAPITAL_PER_ASSET = self.INITIAL_USDC_BALANCE / len(self.ASSETS_TO_TRACK)
-        self.USDC_TO_TRADE_PCT = 0.95 
-        self.SLIPPAGE_PCT = 0.001 
-
         self.INITIAL_PRICES = { 
             'BRCN': 0.50, 'SOL': 150.00, 'JUP': 1.00, 'PYTH': 0.50, 'RENDER': 7.50, 
             'BONK': 0.000025, 'ETH': 3500.00, 'LINK': 15.00, 'AVAX': 30.00, 'DOGE': 0.15
         }
+        
+        # --- CÁLCULOS DERIVADOS ---
+        self.CAPITAL_PER_ASSET = self.INITIAL_USDC_BALANCE / len(self.ASSETS_TO_TRACK)
+        self.USDC_TO_TRADE_PCT = self.MAX_CAPITAL_ALLOCATION_PCT
 
     def display_options(self):
         """Muestra los parámetros de configuración en el inicio."""
-        print(f"{Colors.HEADER}="*60)
-        print(f"💻 {Colors.BOLD}CONFIGURACIÓN ACTUAL DEL BOT (DEMO){Colors.ENDC}")
-        print(f"{Colors.HEADER}="*60 + Colors.ENDC)
-        print(f"💰 {Colors.OKBLUE}CAPITAL INICIAL:{Colors.ENDC} ${self.INITIAL_USDC_BALANCE:,.2f}")
-        print(f"⏳ {Colors.OKBLUE}INTERVALO DE TICK:{Colors.ENDC} {self.TICK_INTERVAL_SECONDS} segundos")
-        print(f"📊 {Colors.OKBLUE}ACTIVOS MONITOREADOS:{Colors.ENDC} {len(self.ASSETS_TO_TRACK)} pares")
-        print(f"{Colors.OKCYAN}-" * 60 + Colors.ENDC)
-        print(f"📉 {Colors.WARNING}ESTRATEGIA RSI (Sobrevendido/Sobrecomprado):{Colors.ENDC} Comprar <={self.RSI_BUY_THRESHOLD} | Vender >={self.RSI_SELL_THRESHOLD}")
-        print(f"🛡️ {Colors.FAIL}GESTIÓN DE RIESGO:{Colors.ENDC} SL = {self.STOP_LOSS_PCT*100}% | TP = {self.TAKE_PROFIT_PCT*100}%")
-        print(f"{Colors.HEADER}="*60 + Colors.ENDC + "\n")
+        print(f"{Colors.HEADER}="*70)
+        print(f"💻 {Colors.BOLD}CONFIGURACIÓN ACTUAL DEL BOT (DEMO) V4.3{Colors.ENDC}")
+        print(f"{Colors.HEADER}="*70 + Colors.ENDC)
+        
+        print(f"\n{Colors.OKBLUE}=== 1. CAPITAL Y PLATAFORMA ==={Colors.ENDC}")
+        print(f"💰 {Colors.BOLD}CAPITAL INICIAL:{Colors.ENDC} ${self.INITIAL_USDC_BALANCE:,.2f}")
+        print(f"💼 {Colors.BOLD}ASIGNACIÓN MÁXIMA POR TRADE:{Colors.ENDC} {self.MAX_CAPITAL_ALLOCATION_PCT*100}% del capital disponible.")
+        print(f"💸 {Colors.BOLD}COMISIÓN (Simulada):{Colors.ENDC} {self.COMMISSION_PCT*100}%")
+        print(f"🌪️ {Colors.BOLD}SLIPPAGE (Simulado):{Colors.ENDC} {self.SLIPPAGE_PCT*100}%")
+        
+        print(f"\n{Colors.OKBLUE}=== 2. TIEMPO Y SIMULACIÓN ==={Colors.ENDC}")
+        print(f"⏳ {Colors.BOLD}INTERVALO DE TICK:{Colors.ENDC} {self.TICK_INTERVAL_SECONDS} segundos")
+        print(f"📚 {Colors.BOLD}TICKS HISTÓRICOS INICIALES:{Colors.ENDC} {self.INITIAL_HISTORY_TICKS} (Necesario para RSI)")
+        print(f"🛑 {Colors.BOLD}LÍMITE DE TICKS (0=∞):{Colors.ENDC} {self.MAX_SIMULATION_TICKS}")
+        
+        print(f"\n{Colors.OKBLUE}=== 3. ESTRATEGIA RSI Y RIESGO ==={Colors.ENDC}")
+        print(f"📈 {Colors.BOLD}RSI PERIODO:{Colors.ENDC} {self.RSI_PERIOD} períodos")
+        print(f"🟢 {Colors.BOLD}RSI COMPRA (Sobrevendido):{Colors.ENDC} <={self.RSI_BUY_THRESHOLD}")
+        print(f"🔴 {Colors.BOLD}RSI VENTA (Sobrecomprado):{Colors.ENDC} >={self.RSI_SELL_THRESHOLD}")
+        print(f"🛡️ {Colors.FAIL}STOP LOSS (SL):{Colors.ENDC} {self.STOP_LOSS_PCT*100}%")
+        print(f"🏆 {Colors.OKGREEN}TAKE PROFIT (TP):{Colors.ENDC} {self.TAKE_PROFIT_PCT*100}%")
+        
+        print(f"\n{Colors.OKBLUE}=== 4. ACTIVOS ==={Colors.ENDC}")
+        print(f"🌐 {Colors.BOLD}ACTIVOS MONITOREADOS:{Colors.ENDC} {', '.join(self.ASSETS_TO_TRACK)}")
+        print(f"{Colors.HEADER}="*70 + Colors.ENDC + "\n")
 
 
 # Inicializar la configuración global
@@ -96,7 +144,7 @@ class LiveFetcher:
         
         return self.current_prices
 
-    def fetch_initial_history(self, initial_ticks=RSI_PERIOD * 2):
+    def fetch_initial_history(self, initial_ticks=CONFIG.INITIAL_HISTORY_TICKS):
         """Simula la carga de datos históricos para inicializar indicadores."""
         print(f"\n[{Colors.OKCYAN}API{Colors.ENDC}] Cargando {initial_ticks} puntos de datos históricos iniciales...")
         history_data = {}
@@ -460,6 +508,12 @@ class PortfolioManager:
                 new_prices = self.fetcher.fetch_latest_prices()
                 self.sim_tick_counter += 1
                 
+                # --- NUEVA VERIFICACIÓN DE LÍMITE DE TICKS ---
+                if CONFIG.MAX_SIMULATION_TICKS > 0 and self.sim_tick_counter > CONFIG.MAX_SIMULATION_TICKS:
+                    print(f"\n\n>>> 🛑 SIMULACIÓN DETENIDA: Límite de {CONFIG.MAX_SIMULATION_TICKS} ticks alcanzado.")
+                    break
+                # ---------------------------------------------
+                
                 # 2. 📈 EJECUTAR TRADES
                 for ticker, asset in self.assets.items():
                     asset.set_new_price(new_prices[ticker])
@@ -496,7 +550,7 @@ class PortfolioManager:
             asset.close_final_position(final_price)
             final_log.extend(asset.transaction_log)
         
-        # Se asegura de crear un DataFrame vacío con columnas si la lista está vacía
+        # Se asegura de crear un DataFrame con las columnas correctas, incluso si está vacío
         if final_log:
             final_df = pd.DataFrame(final_log)
         else:
@@ -532,7 +586,7 @@ class PortfolioManager:
         drawdown = (portfolio_series - peak) / peak 
         max_drawdown = drawdown.min() * 100
 
-        # Riesgo/Recompensa (Corrección de sintaxis de Pandas)
+        # Riesgo/Recompensa 
         all_transactions = [log for asset in self.assets.values() for log in asset.transaction_log]
         
         risk_reward = np.nan
@@ -599,14 +653,14 @@ class PortfolioManager:
         summary_df = pd.DataFrame(asset_summary)
         print(summary_df.to_string(index=False, float_format="%.2f"))
 
-        # --- CORRECCIÓN DE KEYERROR ---
+        # --- CORRECCIÓN DE KEYERROR PARA DATAFRAME VACÍO ---
         print(f"\n📜 {Colors.BOLD}REGISTRO CONSOLIDADO DE TRANSACCIONES (Últimas 10):{Colors.ENDC}")
         
         if not log_df.empty:
             # Imprime solo si hay transacciones registradas
             print(log_df[['Tick', 'Asset', 'Type', 'Entry_Price', 'Exec_Price', 'Qty', 'PnL', 'Commission']].tail(10).to_string(index=False, float_format="%.4f"))
         else:
-            # Mensaje amigable si no hay transacciones para evitar KeyError
+            # Mensaje amigable si no hay transacciones
             print("--- NO HAY TRANSACCIONES CERRADAS EN ESTA SIMULACIÓN ---")
         
         # --- FIN DE CORRECCIÓN ---
