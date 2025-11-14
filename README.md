@@ -43,6 +43,35 @@ Al detener la simulación (q), el bot genera un Reporte Final con métricas clav
 | Sharpe Ratio | Mide el rendimiento de la inversión ajustado al riesgo. R_p / \sigma_p | Un valor mayor a 1.0 indica que la recompensa por cada unidad de riesgo es buena. |
 | Sortino Ratio | Similar al Sharpe, pero solo considera la volatilidad a la baja (pérdidas). | Es una medida más enfocada en el riesgo real del inversor. |
 | Avg. Riesgo/Recompensa | La relación entre la ganancia promedio de las operaciones ganadoras y la pérdida promedio de las perdedoras. | Una relación 1:X con X < 1.0 indica un buen edge (ej. 1:0.5 significa que ganas el doble de lo que pierdes en promedio). |
+
+📋 Descripción Detallada del Dashboard
+1. Encabezados y Resumen Global
+| Elemento | Definición | Análisis del Tick (8) |
+|---|---|---|
+| Tick: 8 | Representa la iteración actual de la simulación. El bot ha procesado 8 ciclos de precios (cada ciclo dura 5 segundos, según tu configuración). | El bot está en las primeras etapas de la simulación. |
+| Valor Total del Portafolio | El valor actual de todo tu capital, sumando tu saldo en USDC más el valor de mercado de los activos comprados. | $999.62. Ha habido una pequeña pérdida, ya que tu capital inicial es de $1,000.00. |
+| Rendimiento | La ganancia o pérdida porcentual acumulada desde el inicio ($1,000.00). | -0.04%. Indica que el portafolio tiene una ligera pérdida. |
+| Benchmark del Mercado | El rendimiento del índice simulado, que representa la media de cómo se mueven todos los activos en conjunto. | -0.00%. El mercado está casi plano, indicando que el bot se rezaga ligeramente. |
+| ANÁLISIS GLOBAL | Interpretación rápida del rendimiento de tu portafolio frente al índice. | UNDERPERFORMING. Tu bot ha perdido un poco de capital mientras el mercado está estable; está por debajo del rendimiento de la media. |
+| Recomendación de Estrategia | Consejo basado en el análisis global para gestionar el riesgo. | Considerar VENTA MANUAL o ajustes SL. El bot sugiere que si la posición abierta (LINK) sigue cayendo, podrías intervenir. |
+2. Desglose de Activos y Estrategia RSI
+Esta sección detalla el estado de cada criptomoneda en relación con tu estrategia de RSI (Índice de Fuerza Relativa).
+| Columna | Definición | Análisis del Tick (8) |
+|---|---|---|
+| Activo | El ticker de la criptomoneda (ej., LINK, ETH, BRCN). | Activos del ecosistema Solana y blue chips de Coinbase. |
+| Precio | El precio actual del activo en USDC. | LINK está a $14.9991, ligeramente por debajo del precio inicial simulado. |
+| RSI | Relative Strength Index. Indicador de momentum que mide la velocidad y el cambio de los movimientos de precios. El rango es 0 a 100. | LINK (22.87) es el único activo en la zona de compra (sobrevendido, < 25), por lo que el bot ya ha comprado. |
+| Posición | El estado de tu capital asignado a ese activo. | LINK está COMPRADO. Todos los demás activos están LIBRE (el capital está en USDC). |
+| Win Rate (C) | El porcentaje de trades cerrados con ganancia para ese activo. (C) indica el número de trades cerrados. | 0.0% (0) para todos los activos, ya que la simulación acaba de empezar y no se ha cerrado ninguna operación (ni por SL, TP o señal RSI opuesta). |
+3. Controles y Tácticas Manuales
+| Elemento | Definición | Implicación Táctica |
+|---|---|---|
+| [INFO] Próximo tick | El tiempo restante para que el bot obtenga nuevos precios y ejecute la lógica de trading. | El bot actuará en 5.0 segundos. |
+| [c]: COMPRA MANUAL | Botón para forzar una compra en el activo más sobrevendido (RSI más bajo y < 50). | Aparece [Ninguno Disponible] porque el mejor candidato (LINK) ya está comprado y no hay otro candidato libre en la zona de sobreventa. |
+| [v]: VENTA MANUAL | Botón para forzar el cierre de una posición abierta (RSI más alto > 50). | Aparece [Ninguno Abierto] porque LINK es la única posición, pero su RSI es muy bajo (22.87), lo que no lo hace un buen candidato para una venta manual. |
+| [q]: DETENER SIMULACIÓN | Detiene el bot y genera el reporte final. | Es tu salida de emergencia o el cierre de sesión para ver el rendimiento completo. |
+
+
 🌐 Próximos Pasos
  * Integración Real de API: Reemplazar la clase LiveFetcher con llamadas reales a las API de Coinbase o de un proveedor de datos de mercado.
  * Backtesting: Añadir un módulo de backtesting para validar la estrategia RSI sobre datos históricos.
