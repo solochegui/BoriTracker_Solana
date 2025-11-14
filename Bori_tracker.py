@@ -84,7 +84,7 @@ class BotConfiguration:
         # ⏳ TIEMPO Y ESTRATEGIA (MODO DCA/ACUMULACIÓN)
         # ==========================================================
         self.TICK_INTERVAL_SECONDS = 12.0   
-        self.DISPLAY_INTERVAL_SECONDS = 0.1 
+        self.DISPLAY_INTERVAL_SECONDS = 0.001 
         self.INITIAL_HISTORY_TICKS = 28 
         self.MAX_SIMULATION_TICKS = 0 
         self.RSI_PERIOD = 5             
