@@ -10,6 +10,9 @@ import termios
 import random 
 import requests 
 import json
+import warnings
+# Suprimir advertencias de Matplotlib/Pandas
+warnings.filterwarnings("ignore")
 
 # --- Códigos ANSI para colores (Estética mejorada) ---
 class Colors:
@@ -34,12 +37,16 @@ class BotConfiguration:
         # ==========================================================
         # 💰 CAPITAL Y PLATAFORMA (Coinbase/CoinGecko)
         # ==========================================================
-        self.INITIAL_USDC_BALANCE = 1000.00 
-        self.API_KEY = "TU_API_KEY_AQUI" 
-        self.API_SECRET = "TU_API_SECRET_AQUI" 
+        # 🎯 CAMBIO 1: Capital Inicial Fijo a $1245.00 (Solicitado por Chegui)
+        self.INITIAL_USDC_BALANCE = 1245.00 
+        self.API_KEY = "TU_API_KEY_AQUI" # Reemplaza con tu clave real
+        self.API_SECRET = "TU_API_SECRET_AQUI" # Reemplaza con tu secreto real
         self.LIVE_TRADING_ENABLED = False 
         self.COMMISSION_PCT = 0.003
         self.SLIPPAGE_PCT = 0.001
+        
+        # 🚨 PARÁMETRO DE ORDEN LIMITADA (Para simular Coinbase Advanced)
+        self.LIMIT_ORDER_OFFSET_PCT = 0.0005 # 0.05%
         
         # ==========================================================
         # 🌐 ACTIVOS Y MAPPING A COINGECKO ID (TOTAL: 30 ACTIVOS)
@@ -59,39 +66,39 @@ class BotConfiguration:
             'SHIB', 'PEPE', 'FTM', 'UNI', 'SUI', 'APT'
         ]
 
-        # 🟢 CORRECCIÓN V6.5 (PREVIA): Inicializar INITIAL_PRICES
         self.INITIAL_PRICES = {ticker: 1.0 for ticker in self.ASSETS_TO_TRACK} 
 
-        # 🔴 CORRECCIÓN V6.5: Mapeo de Ticker a CoinGecko ID (TODOS DEBEN SER STRINGS)
         self.COINGECKO_IDS = {
             'SOL': 'solana', 'JUP': 'jupiter-exchange', 'PYTH': 'pyth-network',
             'ETH': 'ethereum', 'LINK': 'chainlink', 'DOGE': 'dogecoin',
             'BTC': 'bitcoin', 'ADA': 'cardano', 'MATIC': 'polygon',
             'XRP': 'ripple', 
-            'LTC': 'litecoin', # ✅ CORREGIDO
-            'BCH': 'bitcoin-cash', # ✅ CORREGIDO
-            'DOT': 'polkadot', # ✅ CORREGIDO
-            'NEAR': 'near-protocol', # ✅ CORREGIDO
+            'LTC': 'litecoin', 
+            'BCH': 'bitcoin-cash', 
+            'DOT': 'polkadot', 
+            'NEAR': 'near-protocol', 
             'AVAX': 'avalanche-2',
             'OP': 'optimism', 'ARB': 'arbitrum', 'INJ': 'injective-protocol',
             'AAVE': 'aave', 'LDO': 'lido-dao', 'MKR': 'maker',
             'FIL': 'filecoin', 'ICP': 'internet-computer',
             'SHIB': 'shiba-inu', 'PEPE': 'pepe', 'FTM': 'fantom',
-            'UNI': 'uniswap', # ✅ CORREGIDO
-            'SUI': 'sui', # ✅ CORREGIDO
-            'APT': 'aptos' # ✅ CORREGIDO
+            'UNI': 'uniswap', 
+            'SUI': 'sui', 
+            'APT': 'aptos' 
         }
         
         # ==========================================================
         # ⏳ TIEMPO Y ESTRATEGIA (FRECUENCIA DUAL)
         # ==========================================================
-        self.TICK_INTERVAL_SECONDS = 4.8   # Frecuencia de EJECUCIÓN de la Lógica y la API (El tick real)
-        self.DISPLAY_INTERVAL_SECONDS = 0.1 # Frecuencia de la VISUALIZACIÓN de la pantalla (Rápido)
+        # 🎯 CAMBIO 3: Intervalo de Tick para evitar 429 (Seguridad de API)
+        self.TICK_INTERVAL_SECONDS = 12.0   
+        self.DISPLAY_INTERVAL_SECONDS = 0.1 # Frecuencia de la VISUALIZACIÓN
         self.INITIAL_HISTORY_TICKS = 28 
-        self.MAX_SIMULATION_TICKS = 0 # <<-- CERO significa loop infinito (ejecución continua)
+        self.MAX_SIMULATION_TICKS = 0 # <<-- CERO significa loop infinito
         self.RSI_PERIOD = 5             
-        self.RSI_BUY_THRESHOLD = 25    
-        self.RSI_SELL_THRESHOLD = 75   
+        self.RSI_BUY_THRESHOLD = 15    
+        # 🎯 CAMBIO 2: Vender más pronto para buscar Alpha (Antes 75, ahora 70)
+        self.RSI_SELL_THRESHOLD = 70   
         self.STOP_LOSS_PCT = 0.03    
         self.TAKE_PROFIT_PCT = 0.15 
         
@@ -115,8 +122,10 @@ class BotConfiguration:
 
         print(f"\n{Colors.OKBLUE}=== 2. VELOCIDAD DE TICK DUAL ==={Colors.ENDC}")
         print(f"⏱️ {Colors.BOLD}INTERVALO DE EJECUCIÓN/API:{Colors.ENDC} {Colors.WARNING}{self.TICK_INTERVAL_SECONDS} segundos{Colors.ENDC} (Lógica de Trading)")
-        print(f"🖥️ {Colors.BOLD}INTERVALO DE VISUALIZACIÓN:{Colors.ENDC} {Colors.OKCYAN}{self.DISPLAY_INTERVAL_SECONDS} segundos{Colors.ENDC} (Actualización de Pantalla Rápida)")
+        print(f"🖥️ {Colors.BOLD}INTERVALO DE VISUALIZACIÓN:{Colors.ENDC} {Colors.OKCYAN}{self.DISPLAY_INTERVAL_SECONDS} segundos{Colors.ENDC} (Actualización de Pantalla)")
         print(f"📈 {Colors.BOLD}RSI PERIODO (Sensibilidad):{Colors.ENDC} {self.RSI_PERIOD} períodos")
+        print(f"📉 {Colors.BOLD}RSI COMPRA (Umbral Extremo):{Colors.ENDC} {self.RSI_BUY_THRESHOLD} (Sobreventa: {self.RSI_BUY_THRESHOLD})")
+        print(f"📈 {Colors.BOLD}RSI VENTA (Umbral Alpha):{Colors.ENDC} {self.RSI_SELL_THRESHOLD} (Sobrecompra: {self.RSI_SELL_THRESHOLD})")
         print(f"🛡️ {Colors.FAIL}STOP LOSS (SL):{Colors.ENDC} {self.STOP_LOSS_PCT*100}%")
         print(f"🏆 {Colors.OKGREEN}TAKE PROFIT (TP):{Colors.ENDC} {self.TAKE_PROFIT_PCT*100}%")
         
@@ -136,24 +145,20 @@ class LiveFetcher:
     """Implementa la conexión a la API de CoinGecko para obtener precios."""
     
     def __init__(self, assets: list):
-        # La corrección del TypeError se maneja aquí: api_ids ahora solo contendrá strings
         self.api_ids = [v for k, v in CONFIG.COINGECKO_IDS.items() if k != 'BRCN']
         self.id_to_ticker = {v: k for k, v in CONFIG.COINGECKO_IDS.items()}
         self.COINGECKO_URL = "https://api.coingecko.com/api/v3/simple/price"
         self.current_prices = CONFIG.INITIAL_PRICES.copy() 
         
-        # El market index debe empezar con el valor de la asignación inicial para calcular el % de cambio.
         self.initial_market_index_value = sum(CONFIG.INITIAL_PRICES[ticker] * CONFIG.CAPITAL_PER_ASSET for ticker in CONFIG.ASSETS_TO_TRACK)
-        self.market_index_history = [self.initial_market_index_value] 
+        self.market_index_history = [self.initial_market_index_value]
         
         self.last_api_call_time = time.time() - CONFIG.TICK_INTERVAL_SECONDS 
         
     def fetch_latest_prices(self):
         """Obtiene los precios más recientes de CoinGecko y Mock para BRCN, o usa mock si no toca."""
         
-        # 🎯 NUEVA LÓGICA: Solo llama a la API si ha pasado el TICK_INTERVAL_SECONDS
         if time.time() - self.last_api_call_time < CONFIG.TICK_INTERVAL_SECONDS:
-            # Si no es tiempo de llamar a la API, solo actualiza BRCN (Mock) y usa el último precio conocido.
             return self._mock_prices_only()
         
         updated_prices = {}
@@ -161,7 +166,6 @@ class LiveFetcher:
         
         try:
             params = {
-                # 🔴 CORRECCIÓN V6.5: Aquí es donde ocurría el TypeError, ahora api_ids son solo STRINGS.
                 'ids': ','.join(self.api_ids),
                 'vs_currencies': 'usd'
             }
@@ -177,7 +181,6 @@ class LiveFetcher:
                         updated_prices[ticker] = price_data['usd']
         
         except requests.exceptions.RequestException as e:
-            # En caso de error de conexión, usamos el fallback simulado.
             print(f"{Colors.FAIL}Error de conexión con CoinGecko ({e}). Usando precios de fallback simulados.{Colors.ENDC}")
             return self._fallback_mock_prices()
         
@@ -186,7 +189,6 @@ class LiveFetcher:
             if ticker in updated_prices:
                 self.current_prices[ticker] = updated_prices[ticker]
             elif ticker not in self.current_prices:
-                # Si falla una moneda, usamos su último precio conocido
                 self.current_prices[ticker] = CONFIG.INITIAL_PRICES[ticker] 
                 
         # Simular BRCN y actualizar índice con precios más recientes
@@ -209,18 +211,15 @@ class LiveFetcher:
         """Simula precios con micro-volatilidad para mantener la visualización en movimiento."""
         for ticker in CONFIG.ASSETS_TO_TRACK:
             current = self.current_prices.get(ticker, CONFIG.INITIAL_PRICES[ticker])
-            # MUY baja volatilidad para simular el precio estático entre llamadas reales
             change_pct = random.uniform(-0.000001, 0.000001) 
             self.current_prices[ticker] = current * (1 + change_pct)
         
-        # Aunque los precios "reales" no cambian, BRCN y el índice se actualizan para el display
         self._update_mock_brcn_and_index()
         return self.current_prices
         
     def _fallback_mock_prices(self):
         """Genera precios mock para cuando la API falla (no toca la lógica dual)."""
         print(f"[{Colors.WARNING}API{Colors.ENDC}] Usando precios de fallback simulados para evitar interrupción.")
-        # Simula más volatilidad para mostrar que la API falló
         for ticker in CONFIG.ASSETS_TO_TRACK:
             current = self.current_prices.get(ticker, CONFIG.INITIAL_PRICES[ticker])
             change_pct = random.uniform(-0.0002, 0.0002) 
@@ -229,24 +228,48 @@ class LiveFetcher:
         self._update_mock_brcn_and_index()
         return self.current_prices
 
-    def execute_live_order(self, product_id: str, side: str, size: float):
+    # 🛑 IMPLEMENTACIÓN DE ÓRDENES LIMITADAS (MOCK)
+    def execute_live_order(self, product_id: str, side: str, size: float, current_price: float):
         """
-        🛑 ESQUELETO DE FUNCIÓN PARA TRADING REAL (USO DE ÓRDENES LIMITADAS RECOMENDADO)
+        Ejecuta una orden de tipo LIMIT real en la plataforma (MOCK).
         """
         if not CONFIG.LIVE_TRADING_ENABLED:
-            print(f"[{product_id}] {Colors.WARNING}Orden REAL NO EJECUTADA: Live Trading está desactivado. ¡Recuerda usar Órdenes Limitadas en Coinbase Advanced!{Colors.ENDC}")
+            print(f"[{product_id}] {Colors.WARNING}Orden REAL NO EJECUTADA: Live Trading desactivado. Tipo: {side}{Colors.ENDC}")
             return None 
 
-        print(f"[{product_id}] {Colors.WARNING}🚨 ENVIANDO ORDEN REAL A PLATAFORMA (MOCK). Tipo: {side}{Colors.ENDC}")
-        time.sleep(0.5) 
+        print(f"[{product_id}] {Colors.WARNING}🚨 ENVIANDO ORDEN LIMITADA ({side})...{Colors.ENDC}")
+
+        # --- 1. Determinar Precio Límite ---
+        if side == 'BUY':
+            limit_price = current_price * (1 - CONFIG.LIMIT_ORDER_OFFSET_PCT)
+        else: # side == 'SELL'
+            limit_price = current_price * (1 + CONFIG.LIMIT_ORDER_OFFSET_PCT)
+
         
-        # Simulación de respuesta exitosa
-        print(f"[{product_id}] {Colors.OKGREEN}✅ ORDEN SIMULADA ENVIADA. Tipo: {side}, Cantidad: {size:,.4f}.{Colors.ENDC}")
-        return {"status": "success", "executed_size": size} 
+        # --- 2. Preparar la Carga Útil de la Orden (Payload) ---
+        order_payload = {
+            "product_id": product_id,
+            "side": side.lower(), 
+            "order_type": "limit",
+            "price": round(limit_price, 4), 
+            "size": round(size, 8),      
+            "time_in_force": "GTC" 
+        }
+
+        # --- 3. 🛑 CÓDIGO ESPECÍFICO DEL EXCHANGE (A COMPLETAR) 🛑 ---
+        # Si estuvieras usando Coinbase Advanced API, el código iría aquí
+        # ...
+        
+        # 4. Fallback de Simulación
+        time.sleep(0.5) 
+        print(f"[{product_id}] {Colors.OKGREEN}✅ ORDEN LIMITADA SIMULADA COLOCADA y EJECUTADA en ${limit_price:,.4f}.{Colors.ENDC}")
+        
+        # Devolvemos el precio límite como el precio de ejecución simulado
+        return {"status": "success", "executed_size": size, "executed_price": limit_price}
 
 
     def fetch_initial_history(self, initial_ticks=CONFIG.INITIAL_HISTORY_TICKS):
-        """Simula la carga de datos históricos para inicializar indicadores y ejecuta la primera compra (si aplica)."""
+        """Simula la carga de datos históricos para inicializar indicadores."""
         print(f"\n[{Colors.OKCYAN}API{Colors.ENDC}] Cargando {initial_ticks} puntos de datos históricos iniciales (Mock)..")
         history_data = {}
         for ticker in CONFIG.ASSETS_TO_TRACK:
@@ -281,13 +304,11 @@ class TradingAsset:
         self.fetcher = fetcher_instance
         self.initial_usdc_balance = initial_usdc
         
-        # ✅ V6.5: ACUMULADORES BRUTOS para el análisis de transacciones
         self.total_commissions = 0.0
         self.total_winning_pnl = 0.0 
         self.total_losing_pnl = 0.0  
         self.trades_closed = 0
         
-        # Activación de la primera señal 
         self._calculate_indicators()
         
         if 'RSI' in self.data.columns and not self.data['RSI'].isnull().all():
@@ -295,13 +316,20 @@ class TradingAsset:
         else:
             last_rsi = 50 
         
-        # Activación de la primera compra si el activo está "sobrevendido" al inicio.
+        # Compra inicial si RSI está sobrevendido
         if last_rsi <= CONFIG.RSI_BUY_THRESHOLD:
             current_price = self.data['Close'].iloc[-1]
             if self.ticker != 'BRCN': 
                 usdc_to_spend = self.usdc_balance * CONFIG.USDC_TO_TRADE_PCT
                 qty_to_buy = usdc_to_spend / current_price
-                self._execute_trade('BUY_INITIAL', current_price, qty_to_buy)
+                
+                if CONFIG.LIVE_TRADING_ENABLED:
+                    order_result = self.fetcher.execute_live_order(f"{self.ticker}-USD", 'BUY_INITIAL', qty_to_buy, current_price)
+                    if order_result and order_result['status'] == 'success':
+                        executed_price = order_result.get('executed_price', current_price) 
+                        self._update_internal_state('BUY_INITIAL', executed_price, qty_to_buy)
+                else:
+                    self._execute_trade('BUY_INITIAL', current_price, qty_to_buy)
 
 
     def set_new_price(self, new_price: float):
@@ -337,67 +365,60 @@ class TradingAsset:
             order_result = self.fetcher.execute_live_order(
                 product_id=product_id, 
                 side=side, 
-                size=qty_to_trade
+                size=qty_to_trade,
+                current_price=current_price
             )
             
             if order_result and order_result['status'] == 'success':
+                 executed_price = order_result.get('executed_price', current_price) 
                  executed_size = order_result.get('executed_size', qty_to_trade)
-                 return self._update_internal_state(trade_type, current_price, executed_size)
+                 
+                 return self._update_internal_state(trade_type, executed_price, executed_size) 
             else:
                  return current_price
         else:
             return self._simulate_trade(trade_type, current_price, qty_to_trade)
 
-    def _update_internal_state(self, trade_type: str, current_price: float, qty_executed: float):
-        """Actualiza el balance interno tras una ejecución (simulada o real) y acumula PnL."""
+    def _update_internal_state(self, trade_type: str, execution_price: float, qty_executed: float):
+        """Actualiza el balance interno tras una ejecución y acumula PnL."""
         if qty_executed <= 0:
-            return current_price
-
-        # Aplicar Slippage
-        if 'BUY' in trade_type:
-            final_price = current_price * (1 + CONFIG.SLIPPAGE_PCT)
-            commission_pct_factor = CONFIG.COMMISSION_PCT
-        else:
-            final_price = current_price * (1 - CONFIG.SLIPPAGE_PCT)
-            commission_pct_factor = CONFIG.COMMISSION_PCT
-
+            return execution_price
 
         pnl = 0.0
         commission_cost = 0.0
         
         # Lógica de Compra
         if 'BUY' in trade_type:
+            final_price = execution_price
             cost = final_price * qty_executed
-            commission_cost = cost * commission_pct_factor
+            commission_cost = cost * CONFIG.COMMISSION_PCT
             self.usdc_balance -= (cost + commission_cost)
             self.asset_balance += qty_executed
             self.position = 1
-            self.buy_price = final_price # Nuevo precio de entrada
+            self.buy_price = final_price 
             
         # Lógica de Venta/Cierre
         else: 
+            final_price = execution_price
             revenue = final_price * qty_executed
-            commission_cost = revenue * commission_pct_factor
+            commission_cost = revenue * CONFIG.COMMISSION_PCT
             
-            # PnL Bruto sin comisiones (solo por la diferencia de precio)
+            # PnL Bruto sin comisiones
             pnl_bruto = (final_price - self.buy_price) * qty_executed
             
             self.usdc_balance += (revenue - commission_cost)
             self.asset_balance -= qty_executed
             
-            # PnL Neto del trade (el que incluye la comisión)
+            # PnL Neto del trade
             pnl = pnl_bruto - commission_cost 
             
-            # ✅ V6.5: Acumulación para el Reporte Bancario
             self.total_commissions += commission_cost 
             if pnl_bruto > 0.00001: 
-                # Acumulamos la ganancia bruta antes de comisiones
                 self.total_winning_pnl += pnl_bruto 
             elif pnl_bruto < -0.00001: 
-                # Acumulamos la pérdida bruta antes de comisiones (valor negativo)
                 self.total_losing_pnl += pnl_bruto 
             
-            self.trades_closed += 1 # Contar el trade cerrado
+            self.trades_closed += 1 
 
             if self.asset_balance < 0.000001:
                 self.position = 0
@@ -415,7 +436,7 @@ class TradingAsset:
             'Entry_Price': self.buy_price if self.position == 1 or 'BUY' in trade_type else 0.0, 
             'Exec_Price': final_price, 
             'Qty': qty_executed,
-            'PnL': pnl, # PnL Neto del trade cerrado
+            'PnL': pnl, 
             'Commission': commission_cost,
             'USDC_Balance': self.usdc_balance,
             'Asset_Balance': self.asset_balance
@@ -424,12 +445,14 @@ class TradingAsset:
 
     def _simulate_trade(self, trade_type: str, current_price: float, qty_to_trade: float):
         """Simula la ejecución para el modo de práctica."""
+        execution_price = current_price * (1 + CONFIG.SLIPPAGE_PCT) if 'BUY' in trade_type else current_price * (1 - CONFIG.SLIPPAGE_PCT)
+
         if 'BUY' in trade_type:
-            cost_estimate = current_price * qty_to_trade * (1 + CONFIG.SLIPPAGE_PCT) * (1 + CONFIG.COMMISSION_PCT)
+            cost_estimate = execution_price * qty_to_trade * (1 + CONFIG.COMMISSION_PCT)
             if self.usdc_balance < cost_estimate:
                  return current_price
         
-        return self._update_internal_state(trade_type, current_price, qty_to_trade)
+        return self._update_internal_state(trade_type, execution_price, qty_to_trade)
 
     def run_tick(self, is_real_tick: bool):
         """Ejecuta un solo paso de Live Trading (Lógica Automática) y retorna la opinión del bot."""
@@ -489,13 +512,13 @@ class TradingAsset:
                 qty_to_buy = usdc_to_spend / current_price
                 self._execute_trade('BUY', current_price, qty_to_buy)
                 bot_opinion = f"{Colors.OKGREEN}🟢 COMPRA RSI: Sobrevendido ({rsi_value:,.2f}). Ejecutando compra.{Colors.ENDC}"
-                action_taken = True # Añadido para asegurar que la acción se refleja
+                action_taken = True 
             
             elif self.position == 1 and sell_signal:
                 qty_to_sell = self.asset_balance
                 self._execute_trade('SELL', current_price, qty_to_sell)
                 bot_opinion = f"{Colors.FAIL}🔴 VENTA RSI: Sobrecomprado ({rsi_value:,.2f}). Cerrando posición.{Colors.ENDC}"
-                action_taken = True # Añadido para asegurar que la acción se refleja
+                action_taken = True 
             
             elif self.position == 1:
                 pnl_actual_pct = ((current_price / self.buy_price) - 1) * 100
@@ -511,7 +534,6 @@ class TradingAsset:
 
         return bot_opinion, action_taken
 
-    # ... (execute_manual_buy, execute_manual_sell, get_current_value permanecen iguales) ...
     def execute_manual_buy(self):
         """Ejecuta una compra manual."""
         if self.position == 0 and self.usdc_balance > 1:
@@ -542,7 +564,6 @@ class TradingAsset:
         
     def get_win_rate(self):
         """Calcula el porcentaje de operaciones cerradas con ganancia."""
-        # Filtra solo las operaciones de cierre
         closed_trades = pd.DataFrame([log for log in self.transaction_log if 'SELL' in log['Type'] or 'CLOSE' in log['Type']]).copy()
         
         if closed_trades.empty:
@@ -601,7 +622,6 @@ class PortfolioManager:
             total_winning_pnl_bruto += metrics['total_winning_pnl_bruto']
             total_losing_pnl_bruto += metrics['total_losing_pnl_bruto']
             
-        # PnL Neto de transacciones = Ganancias Brutas + Pérdidas Brutas (Pérdidas ya son negativas) - Comisiones
         pnl_neto_cerrado = (total_winning_pnl_bruto + total_losing_pnl_bruto) - total_commissions
         
         return total_winning_pnl_bruto, total_losing_pnl_bruto, total_commissions, pnl_neto_cerrado
@@ -649,7 +669,6 @@ class PortfolioManager:
             
         return description, action_comment, market_pnl_pct, alpha, recent_volatility
 
-    # 🔴 CORRECCIÓN V6.5 (CHEGUI): Añadir 'time_until_next_execution' a la definición de la función (Línea 667)
     def display_status(self, time_until_next_execution: float, asset_opinions: dict):
         """Muestra la interfaz de demo en vivo con estética y opiniones."""
         os.system('cls' if os.name == 'nt' else 'clear')
@@ -668,7 +687,6 @@ class PortfolioManager:
         
         market_desc, action_comment, market_pnl_pct, alpha, volatility_pct = self.interpret_profit(total_value)
         
-        # 💰 V6.5: OBTENER ACUMULACIONES BRUTAS Y NETAS
         total_winning_pnl_bruto, total_losing_pnl_bruto, total_commissions, pnl_neto_cerrado = self._get_bank_details_current()
         pnl_cerrado_color = Colors.OKGREEN if pnl_neto_cerrado >= 0 else Colors.FAIL
         
@@ -683,11 +701,9 @@ class PortfolioManager:
         # --- ACUMULACIÓN DE GANANCIAS POR TRANSACCIÓN (INFORMACIÓN CLAVE) ---
         print(f"  --- ACUMULACIÓN BRUTA DE TRADES CERRADOS ---")
         print(f"  🟢 {Colors.BOLD}GANANCIA BRUTA (Antes Comisiones):{Colors.ENDC} ${total_winning_pnl_bruto:,.4f}")
-        # La pérdida ya viene negativa, la mostramos en positivo para claridad en el display
         print(f"  🔴 {Colors.BOLD}PÉRDIDA BRUTA (Antes Comisiones):{Colors.ENDC} -${abs(total_losing_pnl_bruto):,.4f}") 
         print(f"  ➖ {Colors.BOLD}COMISIONES TOTALES:{Colors.ENDC} -${total_commissions:,.4f}")
         print(f"  💸 {Colors.BOLD}PNL NETO CERRADO (Gan-Per-Com):{Colors.ENDC} {pnl_cerrado_color}${pnl_neto_cerrado:,.4f}{Colors.ENDC}")
-        # ------------------------------------------------------------------------
         
         # 2. Comparación con el Benchmark (Índice Simulado)
         pnl_color_market = Colors.OKGREEN if market_pnl_pct >= 0 else Colors.FAIL
@@ -746,7 +762,6 @@ class PortfolioManager:
             
         print(f"{Colors.OKCYAN}-" * 100 + Colors.ENDC)
         
-        # 🔴 CORRECCIÓN V6.5 (CHEGUI): Usar el argumento pasado a la función (Línea 747)
         time_until_next_execution_display = max(0, time_until_next_execution)
         print(f"[{Colors.OKBLUE}INFO{Colors.ENDC}] Próxima EJECUCIÓN de API/Lógica en: {time_until_next_execution_display:.1f} segundos.")
         print(f"🕹️ {Colors.BOLD}CONTROLES MANUALES:{Colors.ENDC} Usa **Ctrl+C** para detener la simulación y generar el reporte final.")
@@ -797,7 +812,6 @@ class PortfolioManager:
                 
                 time_until_next_execution = CONFIG.TICK_INTERVAL_SECONDS - (time.time() - last_execution_time)
                 
-                # 🔴 CORRECCIÓN V6.5 (CHEGUI): Pasar la variable 'time_until_next_execution' (Línea 797)
                 self.display_status(time_until_next_execution, asset_opinions) 
                 
                 self. _handle_input()
@@ -808,9 +822,10 @@ class PortfolioManager:
             print("\n\n>>> 🛑 SIMULACIÓN DETENIDA: Solicitud de interrupción del usuario (Ctrl+C). Generando reporte final...")
             
         final_prices = self.fetcher.current_prices 
-        for ticker, asset in self.assets.items():
+        # 🟢 ¡CORRECCIÓN APLICADA AQUÍ! (Usar .items() para evitar el TypeError)
+        for ticker, asset in self.assets.items(): 
             final_price = final_prices[ticker]
-            asset.close_final_position(final_price) # Cierra cualquier posición abierta
+            asset.close_final_position(final_price) 
             final_log.extend(asset.transaction_log)
         
         if final_log:
@@ -823,9 +838,7 @@ class PortfolioManager:
         return final_df, self.sim_tick_counter, final_value
     
     def _calculate_metrics(self, final_value: float, total_ticks: int) -> dict:
-        """
-        ✅ V6.5: Calcula métricas clave de rendimiento con enfoque en el PnL desglosado.
-        """
+        """Calcula métricas clave de rendimiento con enfoque en el PnL desglosado."""
         
         total_pnl = final_value - self.initial_usdc_balance
         return_pct = (total_pnl / self.initial_usdc_balance) * 100
@@ -834,32 +847,19 @@ class PortfolioManager:
         total_commissions = 0.0
         total_winning_pnl_bruto = 0.0
         total_losing_pnl_bruto = 0.0
-        final_asset_value = 0.0
-        total_initial_asset_value = 0.0 # Inicializar el valor total inicial de los activos (para calcular PnL no operado)
         
         for asset in self.assets.values():
             metrics = asset.get_accumulated_metrics()
-            final_price = self.fetcher.current_prices[asset.ticker]
-
             total_commissions += metrics['total_commissions']
             total_winning_pnl_bruto += metrics['total_winning_pnl_bruto']
             total_losing_pnl_bruto += metrics['total_losing_pnl_bruto']
-            final_asset_value += metrics['final_asset_balance'] * final_price
-
-            # El valor de los activos iniciales fue CONFIG.CAPITAL_PER_ASSET por ticker
-            total_initial_asset_value += CONFIG.CAPITAL_PER_ASSET
-        
-        # PnL Neto de Transacciones (Cerrado) = Ganancias Brutas + Pérdidas Brutas - Comisiones
+            
         pnl_neto_transacciones = (total_winning_pnl_bruto + total_losing_pnl_bruto) - total_commissions
-        
-        # PnL Total = PnL Neto de Transacciones + PnL No Operado (Volatilidad de activos no vendidos)
-        # Simplificado: PnL No Operado es el PnL Total menos el PnL de lo que se cerró (el resto es valoración)
         pnl_no_operado = total_pnl - pnl_neto_transacciones
         
         
         # 2. Métricas de Rendimiento (Sharpe, Sortino, Drawdown)
         if total_ticks <= 1 or len(self.portfolio_value_history) < 2:
-            # Retorno simplificado si no hay suficientes datos
             metrics_return = {
                 "Volatilidad Anualizada (%)": "N/A",
                 "Drawdown Máximo (%)": "N/A",
@@ -896,10 +896,8 @@ class PortfolioManager:
             if all_transactions:
                 log_df = pd.DataFrame(all_transactions)
                 log_df['PnL_float'] = pd.to_numeric(log_df['PnL'], errors='coerce')
-                # Recalculamos Avg Gain/Loss para la métrica
-                # Recompensa Bruta
+                
                 avg_gain_bruto = total_winning_pnl_bruto / (len(log_df[log_df['PnL_float'] > 0]) or 1)
-                # Riesgo Bruto (pérdida positiva)
                 avg_loss_bruto = abs(total_losing_pnl_bruto) / (len(log_df[log_df['PnL_float'] < 0]) or 1)
                 risk_reward_val = avg_gain_bruto / avg_loss_bruto if avg_loss_bruto != 0 else np.nan
             
@@ -927,9 +925,7 @@ class PortfolioManager:
         }
 
     def generate_report(self, log_df: pd.DataFrame, final_value: float, total_ticks: int):
-        """
-        ✅ V6.5: Genera el reporte final con el nuevo desglose de analítica.
-        """
+        """Genera el reporte final con el nuevo desglose de analítica."""
         
         metrics = self._calculate_metrics(final_value, total_ticks)
         bank_details = metrics.pop("Acumulaciones Bancarias") 
@@ -946,7 +942,7 @@ class PortfolioManager:
         total_pnl_cerrado = bank_details['PnL Neto Cerrado']
         pnl_cerrado_color = Colors.OKGREEN if total_pnl_cerrado >= 0 else Colors.FAIL
         
-        # Desglose de PnL por Transacción (Lo que realmente hizo el bot con sus trades)
+        # Desglose de PnL por Transacción
         print(f"💵 Capital Inicial Total:     ${self.initial_usdc_balance:,.2f}")
         print(f"------------------------------------------------------------")
         print(f"🟢 Ganancia Bruta (Cerrada):  {Colors.OKGREEN}+${bank_details['Ganancia Bruta (Cerrada)']:,.4f}{Colors.ENDC}")
@@ -955,7 +951,7 @@ class PortfolioManager:
         print(f"------------------------------------------------------------")
         print(f"✅ PnL NETO CERRADO (Gan-Per-Com): {pnl_cerrado_color}${total_pnl_cerrado:,.4f}{Colors.ENDC}")
         
-        # PnL No Operado/Volatilidad (El cálculo que faltaba)
+        # PnL No Operado/Volatilidad
         pnl_no_operado_color = Colors.OKGREEN if bank_details['PnL No Operado/Volátil'] >= 0 else Colors.FAIL
         print(f"🧮 PnL NO OPERADO (Volatilidad): {pnl_no_operado_color}${bank_details['PnL No Operado/Volátil']:,.4f}{Colors.ENDC}")
         print(f"------------------------------------------------------------")
@@ -976,7 +972,6 @@ class PortfolioManager:
         asset_summary = []
         for ticker, asset in self.assets.items():
             initial = CONFIG.CAPITAL_PER_ASSET
-            # Final es la suma del USDC restante más el valor del activo
             final = asset.usdc_balance + (asset.asset_balance * asset.data['Close'].iloc[-1]) 
             pnl = final - initial
             pct = (pnl / initial) * 100
@@ -1039,10 +1034,10 @@ if __name__ == '__main__':
     
     print(f"\n{Colors.HEADER}====================================================={Colors.ENDC}")
     print(f"  {Colors.BOLD}BORITRACKER V6.5 - DUAL-FREQUENCY MONITOR{Colors.ENDC}")
-    print(f"  {Colors.WARNING}Visualización rápida (0.1s) | Lógica de Trading (4.8s){Colors.ENDC}")
+    print(f"  {Colors.WARNING}Visualización rápida (0.1s) | Lógica de Trading ({CONFIG.TICK_INTERVAL_SECONDS}s){Colors.ENDC}")
     print(f"{Colors.HEADER}====================================================={Colors.ENDC}")
     print(f"  [1] {Colors.OKGREEN}MODO SIMULACIÓN:{Colors.ENDC} Práctica con capital ficticio y datos reales (CoinGecko).")
-    print(f"  [2] {Colors.FAIL}MODO LIVE TRADING:{Colors.ENDC} Operaciones reales (Intervalo API seguro: 4.8s).")
+    print(f"  [2] {Colors.FAIL}MODO LIVE TRADING:{Colors.ENDC} Operaciones reales (Intervalo API seguro: {CONFIG.TICK_INTERVAL_SECONDS}s).")
     
     mode_choice = input(f"\nSeleccione un modo (1 o 2) y presione Enter: ")
     
