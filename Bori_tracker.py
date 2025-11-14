@@ -478,6 +478,7 @@ class PortfolioManager:
                 # 5. 🛑 DETENCIÓN MANUAL
                 user_action = self._handle_input()
                 if user_action == 'QUIT':
+                    print("\n\n>>> 🛑 SIMULACIÓN DETENIDA: Solicitud de detención del usuario (tecla 'q').")
                     break
                 
                 if wait_time > 0:
@@ -495,7 +496,12 @@ class PortfolioManager:
             asset.close_final_position(final_price)
             final_log.extend(asset.transaction_log)
         
-        final_df = pd.DataFrame(final_log)
+        # Se asegura de crear un DataFrame vacío con columnas si la lista está vacía
+        if final_log:
+            final_df = pd.DataFrame(final_log)
+        else:
+            final_df = pd.DataFrame(columns=['Tick', 'Asset', 'Type', 'Entry_Price', 'Exec_Price', 'Qty', 'PnL', 'Commission'])
+            
         final_value = sum(asset.usdc_balance for asset in self.assets.values())
         
         return final_df, self.sim_tick_counter, final_value
@@ -593,8 +599,17 @@ class PortfolioManager:
         summary_df = pd.DataFrame(asset_summary)
         print(summary_df.to_string(index=False, float_format="%.2f"))
 
+        # --- CORRECCIÓN DE KEYERROR ---
         print(f"\n📜 {Colors.BOLD}REGISTRO CONSOLIDADO DE TRANSACCIONES (Últimas 10):{Colors.ENDC}")
-        print(log_df[['Tick', 'Asset', 'Type', 'Entry_Price', 'Exec_Price', 'Qty', 'PnL', 'Commission']].tail(10).to_string(index=False, float_format="%.4f"))
+        
+        if not log_df.empty:
+            # Imprime solo si hay transacciones registradas
+            print(log_df[['Tick', 'Asset', 'Type', 'Entry_Price', 'Exec_Price', 'Qty', 'PnL', 'Commission']].tail(10).to_string(index=False, float_format="%.4f"))
+        else:
+            # Mensaje amigable si no hay transacciones para evitar KeyError
+            print("--- NO HAY TRANSACCIONES CERRADAS EN ESTA SIMULACIÓN ---")
+        
+        # --- FIN DE CORRECCIÓN ---
         
         plt.figure(figsize=(12, 6))
         plot_data = pd.Series(self.portfolio_value_history).reset_index(drop=True) 
